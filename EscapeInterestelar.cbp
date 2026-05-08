@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="EscapeInterestelar" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/EscapeInterestelar" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-static-libgcc" />
+					<Add option="-static-libstdc++" />
+				</Compiler>
+				<Linker>
+					<Add option="-static-libstdc++" />
+					<Add option="-static-libgcc" />
+					<Add option="-lstdc++" />
+				</Linker>
+				<ExtraCommands>
+					<Add after='cmd /c if not exist &quot;$(TARGET_OUTPUT_DIR)&quot; mkdir &quot;$(TARGET_OUTPUT_DIR)&quot;' />
+					<Add after='cmd /c copy /Y &quot;$(PROJECT_DIR)\libs\freeglut\lib\freeglut.dll&quot; &quot;$(TARGET_OUTPUT_DIR)&quot;' />
+				</ExtraCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/EscapeInterestelar" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-static-libgcc" />
+					<Add option="-static-libstdc++" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-static-libgcc" />
+					<Add option="-static-libstdc++" />
+				</Linker>
+				<ExtraCommands>
+					<Add after='cmd /c if not exist &quot;$(TARGET_OUTPUT_DIR)&quot; mkdir &quot;$(TARGET_OUTPUT_DIR)&quot;' />
+					<Add after='cmd /c copy /Y &quot;$(PROJECT_DIR)\libs\freeglut\lib\freeglut.dll&quot; &quot;$(TARGET_OUTPUT_DIR)&quot;' />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-Wextra" />
+			<Add option="-std=c++11" />
+		</Compiler>
+		<Linker>
+			<Add library="freeglut" />
+			<Add library="opengl32" />
+			<Add library="glu32" />
+		</Linker>
+		<Unit filename="src/main.cpp">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

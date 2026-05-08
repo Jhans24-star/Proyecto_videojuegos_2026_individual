@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1778110576 source:c:\users\piero\downloads\repository code\c++ code\proyectos\proyecto de videojuegos\escape_del_interestelar\src\main.cpp
+	<GL/freeglut.h>
+	<cstdlib>
+	<cmath>
+	<vector>
+	<algorithm>
+	<ctime>
+	<stb_image.h>
+
+1778159758 source:c:\users\lenovo\onedrive\escritorio\proyecto de videojuegos\escape_del_interestelar\src\main.cpp
+	<GL/freeglut.h>
+	<cstdlib>
+	<cmath>
+	<vector>
+	<algorithm>
+	<ctime>
+	<stb_image.h>
+
