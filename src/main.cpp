@@ -2,10 +2,12 @@
 #include <cstdlib>
 #include <cmath>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <ctime>
+
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "../libs/stb/stb_image.h"
 
 // Constantes de la ventana
 const int WINDOW_WIDTH = 800;
@@ -23,7 +25,6 @@ const float ASTEROID_BASE_RADIUS = 15.0f;          // radio base para colisión
 const float ASTEROID_BASE_SPRITE_WIDTH = 32.0f;    // ancho base del sprite
 const float ASTEROID_BASE_SPRITE_HEIGHT = 32.0f;   // alto base del sprite
 const float ASTEROID_ANGULAR_SPEED = 90.0f;        // grados por segundo
-const float SPAWN_INTERVAL = 0.6f;
 const int MAX_ASTEROIDS = 50;
 
 // Variables globales de la nave
@@ -36,9 +37,16 @@ bool moveRight = false;
 // Delta time
 int previousTime = 0;
 float deltaTime = 0.0f;
-float spawnAccumulator = 0.0f;
 
 bool jugando = true;
+
+int asteroidesEsquivados = 0;
+int asteroidesGenerados = 0;
+int nivelActual = 1;
+
+bool nivelCompletado = false;
+
+const int ASTEROIDES_PARA_GANAR = 10;
 
 // Estructura de asteroide con escala individual
 struct Asteroide {
@@ -178,7 +186,8 @@ bool colisionNaveAsteroide(float naveX, float naveY, float naveAncho, float nave
 }
 
 void generarAsteroide() {
-    if (asteroides.size() >= MAX_ASTEROIDS) return;
+    if (asteroidesGenerados >= ASTEROIDES_PARA_GANAR)
+    return;
     Asteroide a;
     // Tamaño variable entre 1.0 y 2.0
     a.escala = 1.0f + (rand() % 100) / 100.0f;
@@ -190,17 +199,20 @@ void generarAsteroide() {
     a.y = -a.radio;
     a.angulo = rand() % 360;
     asteroides.push_back(a);
+    asteroidesGenerados++;
 }
 
 void reiniciarJuego() {
     jugando = true;
     shipX = (WINDOW_WIDTH - SHIP_WIDTH) / 2.0f;
     asteroides.clear();
-    spawnAccumulator = 0.0f;
     previousTime = glutGet(GLUT_ELAPSED_TIME);
     moveLeft = false;
     moveRight = false;
     fondoScrollY = 0.0f;
+    asteroidesEsquivados = 0;
+    nivelCompletado = false;
+    asteroidesGenerados = 0;
 }
 
 // Callbacks de OpenGL
@@ -217,10 +229,57 @@ void display() {
                          ASTEROID_BASE_SPRITE_WIDTH, ASTEROID_BASE_SPRITE_HEIGHT,
                          a.escala, a.angulo);
 
-    if (!jugando) {
-        dibujarTexto(WINDOW_WIDTH/2 - 80, WINDOW_HEIGHT/2, "GAME OVER");
-        dibujarTexto(WINDOW_WIDTH/2 - 100, WINDOW_HEIGHT/2 - 30, "Presiona R para reiniciar");
+    if (!jugando)
+    {
+        // -----------------------------------------
+        // SI EL JUGADOR COMPLETÓ EL NIVEL
+        // -----------------------------------------
+        if (nivelCompletado)
+        {
+            dibujarTexto(
+                WINDOW_WIDTH / 2 - 150,
+                WINDOW_HEIGHT / 2,
+                "Has completado el nivel 1"
+            );
+
+            dibujarTexto(
+                WINDOW_WIDTH / 2 - 150,
+                WINDOW_HEIGHT / 2 + 40,
+                "Presiona R para continuar"
+            );
+        }
+
+        // -----------------------------------------
+        // SI EL JUGADOR PERDIÓ
+        // -----------------------------------------
+        else
+        {
+            dibujarTexto(
+                WINDOW_WIDTH / 2 - 80,
+                WINDOW_HEIGHT / 2,
+                "GAME OVER"
+            );
+
+            dibujarTexto(
+                WINDOW_WIDTH / 2 - 120,
+                WINDOW_HEIGHT / 2 + 40,
+                "Presiona R para reiniciar"
+            );
+        }
     }
+
+    std::string textoNivel =
+        "Nivel: " + std::to_string(nivelActual);
+
+    dibujarTexto(20, 30, textoNivel.c_str());
+
+    std::string textoContador =
+        "Esquivados: " +
+        std::to_string(asteroidesEsquivados) +
+        "/10";
+
+    dibujarTexto(20, 60, textoContador.c_str());
+
     glutSwapBuffers();
 }
 
@@ -238,6 +297,12 @@ void update(int value) {
     deltaTime = (currentTime - previousTime) / 1000.0f;
     previousTime = currentTime;
 
+    if (asteroidesEsquivados >= ASTEROIDES_PARA_GANAR)
+        {
+            nivelCompletado = true;
+            jugando = false;
+        }
+
     if (jugando) {
         // Movimiento nave
         if (moveLeft) shipX -= SHIP_SPEED * deltaTime;
@@ -245,12 +310,21 @@ void update(int value) {
         if (shipX < 0) shipX = 0;
         if (shipX > WINDOW_WIDTH - SHIP_WIDTH) shipX = WINDOW_WIDTH - SHIP_WIDTH;
 
-        // Generación asteroides
-        spawnAccumulator += deltaTime;
-        while (spawnAccumulator >= SPAWN_INTERVAL) {
+        // Generar asteroides
+        if (asteroides.empty())
+        {
             generarAsteroide();
-            spawnAccumulator -= SPAWN_INTERVAL;
         }
+        else
+        {
+            Asteroide& ultimo = asteroides.back();
+
+            if (ultimo.y >= WINDOW_HEIGHT * 0.75f)
+            {
+                generarAsteroide();
+            }
+        }
+
 
         // Mover asteroides y actualizar rotación
         for (auto& a : asteroides) {
@@ -259,10 +333,22 @@ void update(int value) {
             if (a.angulo >= 360.0f) a.angulo -= 360.0f;
         }
 
-        // Eliminar fuera de pantalla
-        asteroides.erase(std::remove_if(asteroides.begin(), asteroides.end(),
-            [](const Asteroide& a) { return a.y > WINDOW_HEIGHT + a.radio; }),
-            asteroides.end());
+        for (auto& a : asteroides)
+        {
+            if (a.y > WINDOW_HEIGHT + a.radio)
+            {
+                asteroidesEsquivados++;
+            }
+        }
+
+        asteroides.erase(
+            remove_if(asteroides.begin(), asteroides.end(),
+                [](const Asteroide& a)
+                {
+                    return a.y > WINDOW_HEIGHT + a.radio;
+                }),
+            asteroides.end()
+        );
 
         // Colisiones
         for (const auto& a : asteroides) {
