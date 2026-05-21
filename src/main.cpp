@@ -37,8 +37,21 @@ bool moveRight = false;
 // Delta time
 int previousTime = 0;
 float deltaTime = 0.0f;
+int tiempoInicioNivel = 0;
 
 bool jugando = true;
+
+enum EstadoJuego
+{
+    MENU,
+    INSTRUCCIONES,
+    TRANSICION_NIVEL,
+    JUGANDO,
+    GAME_OVER,
+    VICTORIA
+};
+
+EstadoJuego estadoActual = MENU;
 
 int asteroidesEsquivados = 0;
 int asteroidesGenerados = 0;
@@ -63,6 +76,8 @@ GLuint texFondoEstatico = 0;
 GLuint texFondoMovil = 0;
 GLuint texNave = 0;
 GLuint texAsteroide = 0;
+GLuint texMenu = 0;
+GLuint texInstrucciones = 0;
 
 // Desplazamiento del fondo móvil
 float fondoScrollY = 0.0f;
@@ -106,6 +121,34 @@ void dibujarFondo(GLuint textura, float desplazamientoY = 0.0f) {
         glTexCoord2f(0.0f, 1.0f + desplazamientoY / 600.0f);
         glVertex2f(0.0f, WINDOW_HEIGHT);
     glEnd();
+    glDisable(GL_TEXTURE_2D);
+}
+
+void dibujarPantallaCompleta(GLuint textura)
+{
+    if (textura == 0) return;
+
+    glBindTexture(GL_TEXTURE_2D, textura);
+    glEnable(GL_TEXTURE_2D);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);
+
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(0, 0);
+
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2f(WINDOW_WIDTH, 0);
+
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2f(0, WINDOW_HEIGHT);
+
+    glEnd();
+
     glDisable(GL_TEXTURE_2D);
 }
 
@@ -202,16 +245,27 @@ void generarAsteroide() {
     asteroidesGenerados++;
 }
 
-void reiniciarJuego() {
+void reiniciarJuego()
+{
     jugando = true;
+
+    estadoActual = JUGANDO;
+
     shipX = (WINDOW_WIDTH - SHIP_WIDTH) / 2.0f;
+
     asteroides.clear();
+
     previousTime = glutGet(GLUT_ELAPSED_TIME);
+
     moveLeft = false;
     moveRight = false;
+
     fondoScrollY = 0.0f;
+
     asteroidesEsquivados = 0;
+
     nivelCompletado = false;
+
     asteroidesGenerados = 0;
 }
 
@@ -219,6 +273,62 @@ void reiniciarJuego() {
 void display() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if (estadoActual == MENU)
+    {
+        dibujarPantallaCompleta(texMenu);
+
+        glColor3f(0.2f, 0.2f, 0.8f);
+
+        glBegin(GL_QUADS);
+
+            glVertex2f(300, 450);
+            glVertex2f(500, 450);
+            glVertex2f(500, 520);
+            glVertex2f(300, 520);
+
+        glEnd();
+
+        dibujarTexto(365, 492, "JUGAR");
+
+        glutSwapBuffers();
+        return;
+    }
+
+    if (estadoActual == INSTRUCCIONES)
+    {
+        dibujarPantallaCompleta(texInstrucciones);
+
+        glColor3f(0.2f, 0.2f, 0.8f);
+
+        glBegin(GL_QUADS);
+
+            glVertex2f(300, 530);
+            glVertex2f(500, 530);
+            glVertex2f(500, 590);
+            glVertex2f(300, 590);
+
+        glEnd();
+
+        dibujarTexto(370, 568, "INICIO");
+
+        glutSwapBuffers();
+        return;
+    }
+
+    if (estadoActual == TRANSICION_NIVEL)
+    {
+        dibujarFondo(texFondoEstatico);
+
+        dibujarTexto(
+            WINDOW_WIDTH / 2 - 50,
+            WINDOW_HEIGHT / 2,
+            "NIVEL 1"
+        );
+
+        glutSwapBuffers();
+        return;
+    }
 
     dibujarFondo(texFondoEstatico, 0.0f);
     dibujarFondo(texFondoMovil, fondoScrollY);
@@ -229,43 +339,40 @@ void display() {
                          ASTEROID_BASE_SPRITE_WIDTH, ASTEROID_BASE_SPRITE_HEIGHT,
                          a.escala, a.angulo);
 
-    if (!jugando)
+    // =========================================
+    // PANTALLA GAME OVER
+    // =========================================
+    if (estadoActual == GAME_OVER)
     {
-        // -----------------------------------------
-        // SI EL JUGADOR COMPLETÓ EL NIVEL
-        // -----------------------------------------
-        if (nivelCompletado)
-        {
-            dibujarTexto(
-                WINDOW_WIDTH / 2 - 150,
-                WINDOW_HEIGHT / 2,
-                "Has completado el nivel 1"
-            );
+        dibujarTexto(
+            WINDOW_WIDTH / 2 - 60,
+            WINDOW_HEIGHT / 2,
+            "GAME OVER"
+        );
 
-            dibujarTexto(
-                WINDOW_WIDTH / 2 - 150,
-                WINDOW_HEIGHT / 2 + 40,
-                "Presiona R para continuar"
-            );
-        }
+        dibujarTexto(
+            WINDOW_WIDTH / 2 - 100,
+            WINDOW_HEIGHT / 2 + 40,
+            "Presiona R para reiniciar"
+        );
+    }
 
-        // -----------------------------------------
-        // SI EL JUGADOR PERDIÓ
-        // -----------------------------------------
-        else
-        {
-            dibujarTexto(
-                WINDOW_WIDTH / 2 - 80,
-                WINDOW_HEIGHT / 2,
-                "GAME OVER"
-            );
+    // =========================================
+    // PANTALLA VICTORIA
+    // =========================================
+    if (estadoActual == VICTORIA)
+    {
+        dibujarTexto(
+            WINDOW_WIDTH / 2 - 110,
+            WINDOW_HEIGHT / 2,
+            "Has completado el nivel 1"
+        );
 
-            dibujarTexto(
-                WINDOW_WIDTH / 2 - 120,
-                WINDOW_HEIGHT / 2 + 40,
-                "Presiona R para reiniciar"
-            );
-        }
+        dibujarTexto(
+            WINDOW_WIDTH / 2 - 110,
+            WINDOW_HEIGHT / 2 + 40,
+            "Presiona R para continuar"
+        );
     }
 
     std::string textoNivel =
@@ -292,18 +399,42 @@ void reshape(int width, int height) {
 }
 
 void update(int value) {
+
+    if (estadoActual == TRANSICION_NIVEL)
+    {
+        int tiempoActual = glutGet(GLUT_ELAPSED_TIME);
+
+        if (tiempoActual - tiempoInicioNivel >= 3000)
+        {
+            estadoActual = JUGANDO;
+
+            reiniciarJuego();
+        }
+
+        glutPostRedisplay();
+        glutTimerFunc(16, update, 0);
+
+        return;
+    }
+
     (void)value;
     int currentTime = glutGet(GLUT_ELAPSED_TIME);
     deltaTime = (currentTime - previousTime) / 1000.0f;
     previousTime = currentTime;
 
     if (asteroidesEsquivados >= ASTEROIDES_PARA_GANAR)
-        {
-            nivelCompletado = true;
-            jugando = false;
-        }
+    {
+        nivelCompletado = true;
 
-    if (jugando) {
+        jugando = false;
+
+        estadoActual = VICTORIA;
+
+        moveLeft = false;
+        moveRight = false;
+    }
+
+    if (estadoActual == JUGANDO && jugando) {
         // Movimiento nave
         if (moveLeft) shipX -= SHIP_SPEED * deltaTime;
         if (moveRight) shipX += SHIP_SPEED * deltaTime;
@@ -355,6 +486,12 @@ void update(int value) {
             if (colisionNaveAsteroide(shipX, shipY, SHIP_WIDTH, SHIP_HEIGHT,
                                       a.x, a.y, a.radio)) {
                 jugando = false;
+
+                estadoActual = GAME_OVER;
+
+                moveLeft = false;
+                moveRight = false;
+
                 break;
             }
         }
@@ -373,8 +510,15 @@ void keyboardDown(unsigned char key, int x, int y) {
     switch (key) {
         case 'a': case 'A': moveLeft = true; break;
         case 'd': case 'D': moveRight = true; break;
-        case 'r': case 'R':
-            if (!jugando) reiniciarJuego();
+        case 'r':
+        case 'R':
+
+            if (estadoActual == GAME_OVER ||
+                estadoActual == VICTORIA)
+            {
+                reiniciarJuego();
+            }
+
             break;
     }
 }
@@ -387,6 +531,35 @@ void keyboardUp(unsigned char key, int x, int y) {
     }
 }
 
+void mouseClick(int button, int state, int x, int y)
+{
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        // BOTON JUGAR
+        if (estadoActual == MENU)
+        {
+            if (x >= 300 && x <= 500 &&
+                y >= 450 && y <= 520)
+            {
+                estadoActual = INSTRUCCIONES;
+            }
+        }
+
+        // BOTON INICIO
+        else if (estadoActual == INSTRUCCIONES)
+        {
+            if (x >= 300 && x <= 500 &&
+                y >= 530 && y <= 590)
+            {
+                estadoActual = TRANSICION_NIVEL;
+
+                tiempoInicioNivel =
+                    glutGet(GLUT_ELAPSED_TIME);
+            }
+        }
+    }
+}
+
 // Inicialización
 void initTexturas() {
     glEnable(GL_BLEND);
@@ -395,6 +568,8 @@ void initTexturas() {
     texFondoMovil = cargarTextura("assets/estrellas_movil.png");
     texNave = cargarTextura("assets/nave.png");
     texAsteroide = cargarTextura("assets/asteroide_01.png");
+    texMenu = cargarTextura("assets/menu.png");
+    texInstrucciones = cargarTextura("assets/instrucciones.png");
 }
 
 void initGLUT(int argc, char** argv) {
@@ -406,6 +581,7 @@ void initGLUT(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboardDown);
     glutKeyboardUpFunc(keyboardUp);
+    glutMouseFunc(mouseClick);
     previousTime = glutGet(GLUT_ELAPSED_TIME);
     glutTimerFunc(16, update, 0);
     srand(static_cast<unsigned>(time(nullptr)));
