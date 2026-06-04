@@ -41,6 +41,19 @@ int tiempoInicioNivel = 0;
 
 bool jugando = true;
 
+// =====================================
+// VARIABLES DE RENDIMIENTO
+// =====================================
+
+int frames = 0;
+float fps = 0.0f;
+
+int tiempoFPS = 0;
+
+float msPorFrame = 0.0f;
+
+float tiempoRender = 0.0f;
+
 enum EstadoJuego
 {
     MENU,
@@ -218,6 +231,7 @@ void dibujarTexto(float x, float y, const char* texto) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
 }
 
+
 // Lógica del juego
 bool colisionNaveAsteroide(float naveX, float naveY, float naveAncho, float naveAlto,
                            float astX, float astY, float astRadio) {
@@ -271,6 +285,7 @@ void reiniciarJuego()
 
 // Callbacks de OpenGL
 void display() {
+    int inicioRender = glutGet(GLUT_ELAPSED_TIME);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -290,6 +305,21 @@ void display() {
         glEnd();
 
         dibujarTexto(365, 492, "JUGAR");
+
+        frames++;
+
+    int tiempoActual = glutGet(GLUT_ELAPSED_TIME);
+
+    if (tiempoActual - tiempoFPS > 1000)
+    {
+        fps = frames * 1000.0f /
+              (tiempoActual - tiempoFPS);
+
+        msPorFrame = 1000.0f / fps;
+
+        frames = 0;
+        tiempoFPS = tiempoActual;
+    }
 
         glutSwapBuffers();
         return;
@@ -386,6 +416,61 @@ void display() {
         "/10";
 
     dibujarTexto(20, 60, textoContador.c_str());
+
+    // =====================================
+    // INFORMACION DE RENDIMIENTO
+    // =====================================
+
+    char buffer[100];
+
+    sprintf(buffer,
+            "FPS: %.0f",
+            fps);
+
+    dibujarTexto(20, 90, buffer);
+
+    sprintf(buffer,
+            "Frame: %.2f ms",
+            msPorFrame);
+
+    dibujarTexto(20, 120, buffer);
+
+    sprintf(buffer,
+            "Asteroides: %d",
+            (int)asteroides.size());
+
+    dibujarTexto(20, 150, buffer);
+
+    int finRender = glutGet(GLUT_ELAPSED_TIME);
+
+    tiempoRender =
+        finRender - inicioRender;
+
+    sprintf(buffer,
+            "Render: %.2f ms",
+            tiempoRender);
+
+    dibujarTexto(20, 180, buffer);
+
+    frames++;
+
+    int tiempoActualFPS =
+        glutGet(GLUT_ELAPSED_TIME);
+
+    if (tiempoActualFPS - tiempoFPS >= 1000)
+    {
+        fps =
+            frames * 1000.0f /
+            (tiempoActualFPS - tiempoFPS);
+
+        msPorFrame =
+            1000.0f / fps;
+
+        frames = 0;
+
+        tiempoFPS =
+            tiempoActualFPS;
+    }
 
     glutSwapBuffers();
 }
@@ -583,6 +668,8 @@ void initGLUT(int argc, char** argv) {
     glutKeyboardUpFunc(keyboardUp);
     glutMouseFunc(mouseClick);
     previousTime = glutGet(GLUT_ELAPSED_TIME);
+    tiempoFPS =
+        glutGet(GLUT_ELAPSED_TIME);
     glutTimerFunc(16, update, 0);
     srand(static_cast<unsigned>(time(nullptr)));
 
